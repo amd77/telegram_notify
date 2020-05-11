@@ -3,7 +3,7 @@ import logging
 import os
 import tempfile
 from decouple import config
-from .bot import send_message, send_document
+from .bot import send_message, send_document, BOT_ENABLED
 
 BOT_MODE = config("BOT_MODE", default="simple")
 
@@ -46,35 +46,37 @@ def logging_config(level='ERROR', filename=None, **kwargs):
     base = {
         'version': 1,
         'disable_existing_loggers': False,
-        'formatters': {},
-        'handlers': {
-        },
-        'loggers': {},
     }
-    handlers = []
+    formatters = {}
+    handlers = {}
+    loggers = {}
     if filename:
-        base['formatters']['verbose'] = {
-                'format': '%(levelname)s %(asctime)s %(name)s %(message)s'
+        formatters['verbose'] = {
+            'format': '%(levelname)s %(asctime)s %(name)s %(message)s'
         }
-        base['handlers']['file'] = {
+        handlers['file'] = {
             'level': level,
             'class': 'logging.FileHandler',
             'filename': filename,
             'formatter': 'verbose',
         }
-        handlers.append("file")
-    if True:
-        base['handlers']['telegram'] = {
+    if BOT_ENABLED:
+        handlers['telegram'] = {
             'level': level,
             'class': 'telegram_notify.log.TelegramHandler',
         }
-        handlers.append("telegram")
     if not kwargs:
         kwargs = {'': level}
     for path, level in kwargs.items():
-        base['loggers'][path] = {
-            'handlers': handlers,
+        loggers[path] = {
+            'handlers': list(handlers.keys()),
             'level': level,
             'propagate': True,
         }
+    if formatters:
+        base['formatters'] = formatters
+    if handlers:
+        base['handlers'] = handlers
+    if loggers:
+        base['loggers'] = loggers
     return base
