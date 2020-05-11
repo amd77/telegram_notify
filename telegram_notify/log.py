@@ -42,25 +42,39 @@ class TelegramHandler(logging.Handler):
         send_message(s)
 
 
-def logging_config(level='ERROR', **kwargs):
+def logging_config(level='ERROR', filename=None, **kwargs):
     base = {
         'version': 1,
         'disable_existing_loggers': False,
+        'formatters': {},
         'handlers': {
-            'telegram': {
-                'level': level,
-                'class': 'telegram_notify.log.TelegramHandler',
-            },
         },
         'loggers': {},
     }
+    handlers = []
+    if filename:
+        base['formatters']['verbose'] = {
+                'format': '%(levelname)s %(asctime)s %(name)s %(message)s'
+        }
+        base['handlers']['file'] = {
+            'level': level,
+            'class': 'logging.FileHandler',
+            'filename': filename,
+            'formatter': 'verbose',
+        }
+        handlers.append("file")
+    if True:
+        base['handlers']['telegram'] = {
+            'level': level,
+            'class': 'telegram_notify.log.TelegramHandler',
+        }
+        handlers.append("telegram")
     if not kwargs:
         kwargs = {'': level}
-
     for path, level in kwargs.items():
         base['loggers'][path] = {
-                'handlers': ['telegram'],
-                'level': level,
-                'propagate': True,
-            }
+            'handlers': handlers,
+            'level': level,
+            'propagate': True,
+        }
     return base
